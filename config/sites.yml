@@ -1,0 +1,11 @@
+test:
+  from: git@github.com:dreikanter/test.spybo.at.git
+  to: turnandpush@softtiny.com:/var/www/test.spybo.at/current/public
+
+softtinyco:
+  from: git@github.com:softtinyco/softtiny.com.git
+  to: turnandpush@softtiny.com:/var/www/softtiny.com/current/public
+
+darky:
+  from: git@github.com:DarkDeny/darky.softtiny.com.git
+  to: turnandpush@softtiny.com:/var/www/darky.softtiny.com/current/public
