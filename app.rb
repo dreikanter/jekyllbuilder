@@ -1,18 +1,9 @@
 require 'bundler/setup'
-require 'logger'
 require 'sinatra'
+require 'json'
+require 'pp'
 
 class TurnAndPushApp < Sinatra::Base
-  configure do
-    set :clean_trace, true
-    enable :logging
-    # logger = Logger.new('log/common.log', 'weekly')
-    # logger.datetime_format = "%Y/%m/%d %H:%M:%S "
-    file = File.new("#{settings.root}/log/#{settings.environment}.log", 'a+')
-    file.sync = true
-    use Rack::CommonLogger, file
-  end
-
   configure :development do
     set :logging, Logger::DEBUG
   end
@@ -21,15 +12,31 @@ class TurnAndPushApp < Sinatra::Base
     set :logging, Logger::INFO
   end
 
+
+  before do
+    logger = Logger.new(File.expand_path('../log/app.log', __FILE__), 'weekly')
+    logger.formatter = proc do |severity, datetime, progname, msg|
+       "#{datetime.strftime('%F %T')} #{severity}: #{msg}\n"
+    end
+    env['rack.logger'] = logger
+  end
+
   post '/handle' do
-    # Handle GitHub web hook
+    logger.debug("Receiving Webhook #{params[:webhookId]}")
+    logger.debug(JSON.parse(params[:result]))
+    # TODO: clone last revision to templ location; build; sync; delete
   end
 
   get '/build/:id' do
-    # Execute build for specific website
+    # Manual execute build for specific website
+    # TODO: clone last revision to templ location; build; sync; delete
   end
 
   get '/status' do
-    # Show status
+    logger.info('Hello!')
+  end
+
+  not_found do
+    '404'
   end
 end
