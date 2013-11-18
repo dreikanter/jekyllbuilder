@@ -1,10 +1,11 @@
 source 'http://rubygems.org/'
 
 gem 'git'
+gem 'jekyll', require: false
 gem 'rye'
 gem 'sinatra'
 
-group :test do
+group :development do
   gem 'rspec'
 end
 
