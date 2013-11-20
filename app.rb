@@ -47,25 +47,23 @@ class TurnAndPushApp < Sinatra::Base
     logger.debug "#{data.inspect}"
 
     unless data.has_key?(:repository) and data[:repository].has_key?(:name)
-      halt 401, 'Bad input'
+      error 401, 'Bad input'
     end
-    
+
     build(data[:repository][:name])
   end
 
   get '/build/:id' do
-    halt 401, 'Undefined site id' unless @sites.has_key? params[:id]
+    error 401, 'Undefined site id' unless @sites.has_key? params[:id]
     build params[:id]
   end
 
   get 'log/?:n?' do
-    halt 401, 'Bad number' unless params[:n].to_s =~ /^\d{,3}$/
-
+    error 401, 'Bad number' unless params[:n].to_s =~ /^\d{,3}$/
     logger.info 'Reading log tail'
     num = params[:n] ? params[:n] : 100
     cmd = "tail -n #{num} #{LOG_FILE}"
     logger.debug cmd
-
     `#{cmd}`
   end
 
@@ -74,7 +72,7 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   not_found do
-    halt 405, 'Go away!'
+    error 405, 'Go away!'
   end
 
   def build(id)
@@ -87,7 +85,7 @@ class TurnAndPushApp < Sinatra::Base
     Dir.chdir tmp_dir
     cmd = "git clone #{GIT_OPTS} #{git_url} #{tmp_dir}"
     logger.debug "Cloning latest revision to temp location: #{cmd}"
-    halt 500, 'Error retrieving website sources' unless system cmd
+    error 500, 'Error retrieving website sources' unless system cmd
 
     logger.debug 'Building and deploying website'
     bundle 'install'
@@ -99,6 +97,11 @@ class TurnAndPushApp < Sinatra::Base
 
   def bundle(command)
     bundle_command = "bundle #{command}"
-    halt 500, "Error doing #{bundle_command}" unless system bundle_command
+    error 500, "Error doing #{bundle_command}" unless system bundle_command
+  end
+
+  def error(code, message)
+    logger.error(message)
+    halt code, message
   end
 end

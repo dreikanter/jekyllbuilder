@@ -1,9 +1,10 @@
-@dir = File.expand_path("..", Dir.pwd)
+app_root = File.expand_path '../..', __FILE__
 
 worker_processes 2
-working_directory @dir
+working_directory app_root
 timeout 30
-listen "#{@dir}/tmp/sockets/unicorn.sock", :backlog => 64
-pid "#{@dir}/tmp/pids/unicorn.pid"
-stderr_path "#{@dir}/log/unicorn.log"
-stdout_path "#{@dir}/log/unicorn.log"
+user 'pi'
+listen "#{app_root}/tmp/sockets/unicorn.sock", :backlog => 64
+pid "#{app_root}/tmp/pids/unicorn.pid"
+stderr_path "#{app_root}/log/unicorn.log"
+stdout_path "#{app_root}/log/unicorn.log"
