@@ -7,6 +7,7 @@ gem 'sinatra'
 
 group :development do
   gem 'rspec'
+  gem 'shotgun', require: false
 end
 
 group :production do

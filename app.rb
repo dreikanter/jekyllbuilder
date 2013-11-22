@@ -16,6 +16,9 @@ class TurnAndPushApp < Sinatra::Base
   # Common git options for website source retrieving
   GIT_OPTS = '--depth 1 --single-branch --branch master'
 
+  # Default tail length 
+  TAIL_LENGTH = 100
+
   configure do
     mime_type :plain, 'text/plain'
     set :public_folder, 'public'
@@ -58,22 +61,22 @@ class TurnAndPushApp < Sinatra::Base
     build params[:id]
   end
 
-  get 'log/?:n?' do
-    error 401, 'Bad number' unless params[:n].to_s =~ /^\d{,3}$/
+  get '/log' do
+    redirect "/log/#{TAIL_LENGTH}"
+  end
+
+  get '/log/:n' do
+    error 401, 'Bad number' unless params[:n].to_s =~ /^\d{,4}$/
     logger.info 'Reading log tail'
-    num = params[:n] ? params[:n] : 100
+    num = params[:n] || TAIL_LENGTH
     cmd = "tail -n #{num} #{LOG_FILE}"
     logger.debug cmd
     `#{cmd}`
   end
 
-  get '/' do
-    redirect 'index.html'
-  end
-
-  not_found do
-    error 405, 'Go away!'
-  end
+  # not_found do
+  #   error 405, 'Go away!'
+  # end
 
   def build(id)
     logger.info "Building #{id}"
