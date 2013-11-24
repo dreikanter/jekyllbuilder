@@ -72,18 +72,31 @@ class TurnAndPushApp < Sinatra::Base
     end
 
     tmp_dir = File.join TMP_DIR, "#{owner}-#{repo}"
-    begin
-      Git.open(tmp_dir).pull(source[:url])
-      logger.info "#{source[:url]} updated at #{tmp_dir}"
-    rescue ArgumentError
-      FileUtils.rm_rf tmp_dir if File.directory? tmp_dir
-      Git.clone(source[:url], tmp_dir)
-      logger.debug "#{source[:url]} cloned to #{tmp_dir}"
+
+    if File.directory? tmp_dir
+      logger.info 'Updating local repository'
+      `cd #{tmp_dir} && git fetch --all && git reset --hard origin/master`
+      if $?.to_i != 0
+        logger.error 'Error merging remote changes'
+        logger.info 'Purging local copy'
+        FileUtils.rm_rf tmp_dir
+      end
     end
 
-    logger.debug 'Building and deploying website'
+    unless File.directory? tmp_dir
+      logger.info "Cloning #{source[:url]} to #{tmp_dir}"
+      `git clone #{source[:url]} #{tmp_dir}`
+      if $?.to_i != 0
+        error 500, 'Error getting site source'
+      end
+    end
+
     Dir.chdir tmp_dir do
-      bundle 'exec rack generate'
+      logger.info 'Updating dependencies'
+      bundle 'install'
+
+      logger.info 'Building website'
+      bundle 'exec jekyll build'
     end
   end
 
