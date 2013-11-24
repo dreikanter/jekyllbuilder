@@ -1,11 +1,10 @@
 app_root = File.expand_path '../..', __FILE__
 
-worker_processes 2
+worker_processes 1
 working_directory app_root
-timeout 30
+timeout 180
 user 'pi'
 listen 8000
-# listen "#{app_root}/tmp/sockets/unicorn.sock", :backlog => 64
 pid "#{app_root}/tmp/pids/unicorn.pid"
 stderr_path "#{app_root}/log/unicorn.log"
 stdout_path "#{app_root}/log/unicorn.log"
