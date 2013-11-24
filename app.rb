@@ -1,16 +1,14 @@
-require 'bundler/setup'
-require 'sinatra'
-require 'json'
-require 'fileutils'
-require 'logger'
 require 'addressable/uri'
+require 'bundler/setup'
+require 'fileutils'
+require 'json'
+require 'logger'
+require 'sinatra'
 require 'yaml'
-require 'pp'
-require 'git'
 
 class TurnAndPushApp < Sinatra::Base
-  # Path to the list of allowed git sources
-  ALLOWED_SOURCES = File.join settings.root, "config/allowed-sources.yml"
+  # Path to the git sources definition file
+  SOURCE_FILE = File.join settings.root, 'config/sources.yml'
 
   # Temporaru dir for website building
   TMP_DIR = File.join settings.root, 'tmp'
@@ -32,10 +30,16 @@ class TurnAndPushApp < Sinatra::Base
   before do
     content_type 'text/plain', :charset => 'utf-8'
     @sources = []
-    YAML.load_file(ALLOWED_SOURCES).each do |url|
-      path = Addressable::URI.parse(url).path
+    YAML.load_file(SOURCE_FILE).each do |s|
+      path = Addressable::URI.parse(s['url']).path
       owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
-      @sources << {:url => url, :owner => owner, :repo => repo }
+      @sources << {
+        :url => s['url'],
+        :owner => owner,
+        :repo => repo,
+        :build => s['build'],
+        :deploy => s['deploy'],
+      }
     end
   end
 
@@ -66,10 +70,9 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   def build(owner, repo)
+    start_time = start = Time.now
     source = @sources.find {|s| s[:owner] == owner and s[:repo] == repo}
-    unless source
-      error 401, 'Unallowed source'
-    end
+    error 401, 'Unallowed source' unless source
 
     tmp_dir = File.join TMP_DIR, "#{owner}-#{repo}"
 
@@ -86,18 +89,26 @@ class TurnAndPushApp < Sinatra::Base
     unless File.directory? tmp_dir
       logger.info "Cloning #{source[:url]} to #{tmp_dir}"
       `git clone #{source[:url]} #{tmp_dir}`
-      if $?.to_i != 0
-        error 500, 'Error getting site source'
-      end
+      error 500, 'Error getting site source' unless $?.to_i == 0
     end
 
-    Dir.chdir tmp_dir do
-      logger.info 'Updating dependencies'
-      bundle 'install'
+    logger.info 'Building website'
+    logger.debug cmd = [
+      "cd #{tmp_dir}",
+      "export BUNDLE_GEMFILE=#{tmp_dir}/Gemfile",
+      "#{source[:build]}"
+    ].join(' && ')
+    error 500, 'Error building website' unless system cmd
 
-      logger.info 'Building website'
-      bundle 'exec jekyll build'
-    end
+    logger.info 'Deploying website'
+    cmd = "cd #{tmp_dir} && #{source[:deploy]}"
+    logger.debug cmd
+    error 500, 'Error deploying website' unless system cmd
+
+    seconds = (Time.now - start_time).round(2)
+    logger.info "Finished in #{seconds} seconds."
+
+    halt 200, 'Ok'
   end
 
   def tail(num=TAIL_LENGTH)
@@ -111,7 +122,7 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   def error(code, message)
-    logger.error(message)
+    logger.fatal(message)
     halt code, message
   end
 end

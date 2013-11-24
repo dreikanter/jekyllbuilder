@@ -4,6 +4,7 @@
 *.rbc
 .bundle
 .config
+config/sources.yml
 coverage
 InstalledFiles
 lib/bundler/man
