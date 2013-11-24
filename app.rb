@@ -2,100 +2,94 @@ require 'bundler/setup'
 require 'sinatra'
 require 'json'
 require 'fileutils'
+require 'logger'
+require 'addressable/uri'
+require 'yaml'
+require 'pp'
+require 'git'
 
 class TurnAndPushApp < Sinatra::Base
-  # Sinatra app root dir
-  APP_ROOT = File.expand_path '..', __FILE__
+  # Path to the list of allowed git sources
+  ALLOWED_SOURCES = File.join settings.root, "config/allowed-sources.yml"
 
   # Temporaru dir for website building
-  TMP_DIR = File.join APP_ROOT, 'tmp'
+  TMP_DIR = File.join settings.root, 'tmp'
 
   # Application log file
-  LOG_FILE = File.join APP_ROOT, 'log/app.log'
+  LOG_FILE = File.join settings.root, "log/#{settings.environment}.log"
 
-  # Common git options for website source retrieving
-  GIT_OPTS = '--depth 1 --single-branch --branch master'
-
-  # Default tail length 
-  TAIL_LENGTH = 100
+  # Default tail length
+  TAIL_LENGTH = 10
 
   configure do
-    mime_type :plain, 'text/plain'
-    set :public_folder, 'public'
+    enable :logging
   end
 
-  configure :development do
+  configure :development, :test do
     set :logging, Logger::DEBUG
   end
 
-  configure :production do
-    set :logging, Logger::INFO
-  end
-
   before do
-    # Setting up the logging
-    logger = Logger.new(LOG_FILE, 'weekly')
-    logger.formatter = proc do |severity, datetime, progname, msg|
-       "#{datetime.strftime('%F %T')} #{severity}: #{msg}\n"
+    content_type 'text/plain', :charset => 'utf-8'
+    @sources = []
+    YAML.load_file(ALLOWED_SOURCES).each do |url|
+      path = Addressable::URI.parse(url).path
+      owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
+      @sources << {:url => url, :owner => owner, :repo => repo }
     end
-    env['rack.logger'] = logger
-
-    # Loading configuration
-    @sites = YAML.load_file File.join(APP_ROOT, 'config/sites.yml')
   end
 
   post '/handle' do
-    logger.info "Handling webhook"
-    data = JSON.parse params[:result]
-    logger.debug "#{data.inspect}"
-
-    unless data.has_key?(:repository) and data[:repository].has_key?(:name)
-      error 401, 'Bad input'
-    end
-
-    build(data[:repository][:name])
+    data = JSON.parse params[:payload]
+    owner = data['repository']['owner']['name']
+    repo = data['repository']['name']
+    logger.info "Handling webhook: #{owner}/#{repo}"
+    build(owner, repo)
   end
 
-  get '/build/:id' do
-    error 401, 'Undefined site id' unless @sites.has_key? params[:id]
-    build params[:id]
+  get '/build/:owner/:repo' do
+    logger.info "Build request: #{owner}/#{repo}"
+    build(owner, repo)
   end
 
   get '/log' do
-    redirect "/log/#{TAIL_LENGTH}"
+    tail
   end
 
   get '/log/:n' do
     error 401, 'Bad number' unless params[:n].to_s =~ /^\d{,4}$/
-    logger.info 'Reading log tail'
-    num = params[:n] || TAIL_LENGTH
-    cmd = "tail -n #{num} #{LOG_FILE}"
-    logger.debug cmd
-    `#{cmd}`
+    tail(params[:n])
   end
 
-  # not_found do
-  #   error 405, 'Go away!'
-  # end
+  not_found do
+    error 405, 'Go away!'
+  end
 
-  def build(id)
-    logger.info "Building #{id}"
-    git_url = @sites[id][:from]
-    tmp_dir = File.join TMP_DIR, \
-      "#{DateTime.now.strftime('%Y%m%d%H%M%S')}-#{id}"
+  def build(owner, repo)
+    source = @sources.find {|s| s[:owner] == owner and s[:repo] == repo}
+    unless source
+      error 401, 'Unallowed source'
+    end
 
-    FileUtils.mkdir_p tmp_dir
-    Dir.chdir tmp_dir
-    cmd = "git clone #{GIT_OPTS} #{git_url} #{tmp_dir}"
-    logger.debug "Cloning latest revision to temp location: #{cmd}"
-    error 500, 'Error retrieving website sources' unless system cmd
+    tmp_dir = File.join TMP_DIR, "#{owner}-#{repo}"
+    begin
+      Git.open(tmp_dir).pull(source[:url])
+      logger.info "#{source[:url]} updated at #{tmp_dir}"
+    rescue ArgumentError
+      FileUtils.rm_rf tmp_dir if File.directory? tmp_dir
+      Git.clone(source[:url], tmp_dir)
+      logger.debug "#{source[:url]} cloned to #{tmp_dir}"
+    end
 
     logger.debug 'Building and deploying website'
-    bundle 'install'
-    bundle 'exec rake generate deploy'
+    Dir.chdir tmp_dir do
+      bundle 'exec rack generate'
+    end
+  end
 
-    logger.debug 'Cleaning up'
-    FileUtils.rm_rf tmp_dir
+  def tail(num=TAIL_LENGTH)
+    logger.info "Reading #{num} lines from log tail"
+    `tail -n #{num} #{LOG_FILE}`
   end
 
   def bundle(command)

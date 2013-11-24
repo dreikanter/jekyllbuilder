@@ -1,0 +1,12 @@
+# Jekyll websites source list
+
+# Each line should contain clone URL for git repository. The presence
+# of source repository in this list tells the build server the corresponding
+# website is allowed to be cloned and deployed. SSH and HTTPS addresses are
+# acceptable.
+
+- https://github.com/mojombo/jekyll.git
+- git@github.com:dreikanter/jekyll-test.git
+
+# softtinyco: git@github.com:softtinyco/softtiny.com.git
+# darky: git@github.com:DarkDeny/darky.softtiny.com.git

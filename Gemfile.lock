@@ -1,40 +1,62 @@
+GIT
+  remote: https://github.com/mojombo/jekyll.git
+  revision: 7cda916faaa1f724c94bc1b75a8106e2d8d6d92e
+  specs:
+    jekyll (1.3.0)
+      classifier (~> 1.3)
+      colorator (~> 0.1)
+      commander (~> 4.1.3)
+      liquid (~> 2.5.2)
+      listen (~> 1.3)
+      maruku (~> 0.6.0)
+      pygments.rb (~> 0.5.0)
+      redcarpet (~> 2.3.0)
+      safe_yaml (~> 0.9.7)
+
 GEM
   remote: http://rubygems.org/
   specs:
+    addressable (2.3.5)
     annoy (0.5.6)
       highline (>= 1.5.0)
     classifier (1.3.3)
       fast-stemmer (>= 1.0.0)
+    colorator (0.1)
+    commander (4.1.5)
+      highline (~> 1.6.11)
     diff-lcs (1.2.5)
-    directory_watcher (1.4.1)
     docile (1.1.0)
     drydock (0.6.9)
-    fast-stemmer (1.0.1)
+    fast-stemmer (1.0.2)
+    ffi (1.9.3)
+    ffi (1.9.3-x86-mingw32)
     git (1.2.6)
     highline (1.6.20)
-    jekyll (0.12.0)
-      classifier (~> 1.3)
-      directory_watcher (~> 1.1)
-      kramdown (~> 0.13.4)
-      liquid (~> 2.3)
-      maruku (~> 0.5)
-      pygments.rb (~> 0.3.2)
     kgio (2.8.1)
-    kramdown (0.13.8)
-    liquid (2.3.0)
+    liquid (2.5.4)
+    listen (1.3.1)
+      rb-fsevent (>= 0.9.3)
+      rb-inotify (>= 0.9)
+      rb-kqueue (>= 0.2)
     maruku (0.6.1)
       syntax (>= 1.0.0)
     net-scp (1.1.2)
       net-ssh (>= 2.6.5)
     net-ssh (2.7.0)
     posix-spawn (0.3.6)
-    pygments.rb (0.3.4)
+    pygments.rb (0.5.4)
       posix-spawn (~> 0.3.6)
       yajl-ruby (~> 1.1.0)
     rack (1.5.2)
     rack-protection (1.5.1)
       rack
     raindrops (0.12.0)
+    rb-fsevent (0.9.3)
+    rb-inotify (0.9.2)
+      ffi (>= 0.5.0)
+    rb-kqueue (0.2.0)
+      ffi (>= 0.5.0)
+    redcarpet (2.3.0)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
       rspec-expectations (~> 2.14.0)
@@ -50,6 +72,7 @@ GEM
       net-scp (>= 1.0.2)
       net-ssh (>= 2.0.13)
       sysinfo (>= 0.7.3)
+    safe_yaml (0.9.7)
     shotgun (0.9)
       rack (>= 1.0)
     sinatra (1.4.4)
@@ -74,8 +97,9 @@ PLATFORMS
   x86-mingw32
 
 DEPENDENCIES
+  addressable
   git
-  jekyll
+  jekyll!
   rspec
   rye
   shotgun
