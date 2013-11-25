@@ -40,9 +40,9 @@ Add `http://{your-domain}/handle` to Settings/Service Hooks/WebHook URLs list fo
 
 Check deployment configuration inside rakefiles for each Jekyll project. It should work properly on build server environment. Example is below.
 
-	ssh_user       = "admin@softtiny.com"
+	ssh_user       = "admin@example.com"
 	ssh_port       = "22"
-	document_root  = "/var/www/softtiny.com/current/"
+	document_root  = "/var/www/example.com/current/"
 	rsync_delete   = true
 	rsync_args     = ""
 	deploy_default = "rsync"
