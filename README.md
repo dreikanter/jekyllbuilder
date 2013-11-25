@@ -80,3 +80,9 @@ Log tail request:
 	GET http://{domain}/log/{lines-number}
 
 `{lines-number}` is an optional parameter to specify amount of lines to get from the end of log file. By default `/log` will return 10 lines.
+
+## Why Turn and Push?
+
+You don't whant to know ಠ_ಠ
+
+![Turn and Push GIF](http://d.pr/i/ykzw+)
