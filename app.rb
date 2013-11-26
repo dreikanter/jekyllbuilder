@@ -99,6 +99,8 @@ class TurnAndPushApp < Sinatra::Base
     logger.info 'Building website'
     logger.debug cmd = [
       "cd #{tmp_dir}",
+      "export LC_CTYPE=en_US.UTF-8",
+      "export LANG=en_US.UTF-8",
       "export BUNDLE_GEMFILE=#{tmp_dir}/Gemfile",
       "#{source[:build]}"
     ].join(' && ')
