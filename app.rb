@@ -52,6 +52,10 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   get '/build/:owner/:repo' do
+    owner = params[:owner]
+    repo = params[:repo]
+    error 401, 'Bad owner' unless owner
+    error 401, 'Bad repository' unless repo
     logger.info "Build request: #{owner}/#{repo}"
     build(owner, repo)
   end
