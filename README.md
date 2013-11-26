@@ -8,7 +8,7 @@ Turn and Push is [Sinatra](http://sinatrarb.com)-based application intended (but
 
 This guide assumes:
 
-- Ruby 2.0 is already present in the system.
+- Ruby 2.0 and Bundler are already present in the system.
 - [rbenv](https://github.com/sstephenson/rbenv) is used to control Ruby versions.
 - The server is Raspberry Pi running Raspbian Linux.
 - Website sources are hosted on GitHub.
@@ -62,6 +62,19 @@ Configure upstart to run unicorn on boot up.
 	sudo ln -s /var/www/turnandpush/current/config/upstart.conf /etc/init/turnandpush.conf
 
 Reboot, check if there are nginx and unicorn in the process list (`ps aux`), and [test GitHub web hooks](https://help.github.com/articles/testing-webhooks) to see everything is working.
+
+### Troubleshooting
+
+- "Liquid Exception: Pygments can't parse unknown language: ruby."
+
+  Jekyll/Octopress uses pygments.rb gem, which is Ruby wrapper for Python Pygments library. Make shure the default Python version on your system is 2.7.*. Pygments is not working with Python 3 for some reason.
+  
+- "YAML Exception reading invalid byte sequence in US-ASCII"
+
+  This error could be caused by BOM prefix in post/page files, or bad system locale. To fix second problem TNP overrides `LC_CTYPE` and `LANG` environment variables with the value of `en_US.UTF-8`. To fix the first problem (if encountered) just save text files without BOM with your text editor.
+  
+- At the moment of writing Octopress may crash when using Ruby 2.0. Make shure 1.9.3 is installed in your system, and use your Ruby version manager (rbenv or RVM) to define specific version for the build.
+
 
 ## API
 
