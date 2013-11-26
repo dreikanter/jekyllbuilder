@@ -78,7 +78,7 @@ class TurnAndPushApp < Sinatra::Base
     source = @sources.find {|s| s[:owner] == owner and s[:repo] == repo}
     error 401, 'Unallowed source' unless source
 
-    tmp_dir = File.join TMP_DIR, "#{owner}-#{repo}"
+    tmp_dir = File.join TMP_DIR, "#{owner}--#{repo}"
 
     if File.directory? tmp_dir
       logger.info 'Updating local repository'
