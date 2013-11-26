@@ -6,5 +6,7 @@ timeout 180
 user 'pi', 'pi'
 listen 8000
 pid "#{app_root}/tmp/pids/unicorn.pid"
-stderr_path "#{app_root}/log/unicorn.log"
-stdout_path "#{app_root}/log/unicorn.log"
+
+env = ENV['RACK_ENV'] || 'production'
+stderr_path "#{app_root}/log/#{env}.log"
+stdout_path "#{app_root}/log/#{env}.log"
