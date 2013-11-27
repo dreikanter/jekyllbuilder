@@ -17,7 +17,7 @@ class TurnAndPushApp < Sinatra::Base
   LOG_FILE = File.join settings.root, "log/#{settings.environment}.log"
 
   # Default tail length
-  TAIL_LENGTH = 10
+  TAIL_LENGTH = 30
 
   configure do
     enable :logging
@@ -29,18 +29,6 @@ class TurnAndPushApp < Sinatra::Base
 
   before do
     content_type 'text/plain', :charset => 'utf-8'
-    @sources = []
-    YAML.load_file(SOURCE_FILE).each do |s|
-      path = Addressable::URI.parse(s['url']).path
-      owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
-      @sources << {
-        :url => s['url'],
-        :owner => owner,
-        :repo => repo,
-        :build => s['build'],
-        :deploy => s['deploy'],
-      }
-    end
   end
 
   post '/handle' do
@@ -69,8 +57,31 @@ class TurnAndPushApp < Sinatra::Base
     error 405, 'Go away!'
   end
 
+  def load_sources()
+    sources = []
+    YAML.load_file(SOURCE_FILE).each do |s|
+      path = Addressable::URI.parse(s['url']).path
+      owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
+      sources << {
+        :url => s['url'],
+        :owner => owner,
+        :repo => repo,
+        :build => s['build'],
+        :deploy => s['deploy'],
+      }
+    end
+    return sources
+  end
+
   def build(owner, repo)
     start_time = start = Time.now
+
+    begin
+      @sources = load_sources
+    rescue => e
+      error 500, "Error loading sources from #{SOURCE_FILE}"
+    end
+
     source = @sources.find {|s| s[:owner] == owner and s[:repo] == repo}
     error 401, 'Unallowed source' unless source
 
@@ -112,6 +123,7 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   def tail(num=TAIL_LENGTH)
+    error 500, 'Log file not exists' unless File.exists? LOG_FILE
     logger.info "Reading #{num} lines from log tail"
     `tail -n #{num} #{LOG_FILE}`
   end
