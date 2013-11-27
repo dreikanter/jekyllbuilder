@@ -96,6 +96,6 @@ Log tail request:
 
 ## Why Turn and Push?
 
-You don't whant to know ಠ_ಠ
+You don't want to know ಠ_ಠ
 
 ![Turn and Push GIF](http://d.pr/i/ykzw+)
