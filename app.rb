@@ -40,6 +40,10 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   get '/build/:owner/:repo' do
+    owner = params[:owner]
+    repo = params[:repo]
+    error 401, 'Bad owner' unless owner
+    error 401, 'Bad repository' unless repo
     logger.info "Build request: #{owner}/#{repo}"
     build(owner, repo)
   end
@@ -106,6 +110,8 @@ class TurnAndPushApp < Sinatra::Base
     logger.info 'Building website'
     logger.debug cmd = [
       "cd #{tmp_dir}",
+      "export LC_CTYPE=en_US.UTF-8",
+      "export LANG=en_US.UTF-8",
       "export BUNDLE_GEMFILE=#{tmp_dir}/Gemfile",
       "#{source[:build]}"
     ].join(' && ')
