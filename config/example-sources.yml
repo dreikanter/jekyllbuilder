@@ -11,9 +11,9 @@
 # Jekyll example with HTTPS source URL and rsync deployment
 - url: https://github.com/dreikanter/jekyll-test.git
   build: bundle install && bundle exec jekyll build
-  deploy: rsync -avz --delete _site/ admin@api.spybo.at:/var/www/alpha.spybo.at/current
+  deploy: rsync -avz --delete _site/ admin@example.com:/var/www/example.com/current
 
 # Octopress example with SSH source URL
 - url: git@github.com:dreikanter/octopress-test.git
   build: bundle install && bundle exec rake generate
-  deploy: rsync -avz --delete public/ admin@api.spybo.at:/var/www/alpha.spybo.at/current
+  deploy: rsync -avz --delete public/ admin@example.org:/var/www/example.org/current
