@@ -6,19 +6,19 @@ require 'logger'
 require 'sinatra'
 require 'yaml'
 
+# Path to the git sources definition file
+SOURCE_FILE = File.join settings.root, 'config/sources.yml'
+
+# Temporaru dir for website building
+TMP_DIR = File.join settings.root, 'tmp'
+
+# Application log file
+LOG_FILE = File.join settings.root, "log/#{settings.environment}.log"
+
+# Default tail length
+TAIL_LENGTH = 30
+
 class TurnAndPushApp < Sinatra::Base
-  # Path to the git sources definition file
-  SOURCE_FILE = File.join settings.root, 'config/sources.yml'
-
-  # Temporaru dir for website building
-  TMP_DIR = File.join settings.root, 'tmp'
-
-  # Application log file
-  LOG_FILE = File.join settings.root, "log/#{settings.environment}.log"
-
-  # Default tail length
-  TAIL_LENGTH = 30
-
   configure do
     enable :logging
   end
@@ -93,8 +93,12 @@ class TurnAndPushApp < Sinatra::Base
 
     if File.directory? tmp_dir
       logger.info 'Updating local repository'
-      `cd #{tmp_dir} && git fetch --all && git reset --hard origin/master`
-      if $?.to_i != 0
+      cmd = [
+        "cd #{tmp_dir}",
+        "git fetch --all",
+        "git reset --hard origin/master"
+        ].join(' && ')
+      unless sh(cmd)
         logger.error 'Error merging remote changes'
         logger.info 'Purging local copy'
         FileUtils.rm_rf tmp_dir
@@ -103,24 +107,23 @@ class TurnAndPushApp < Sinatra::Base
 
     unless File.directory? tmp_dir
       logger.info "Cloning #{source[:url]} to #{tmp_dir}"
-      `git clone #{source[:url]} #{tmp_dir}`
-      error 500, 'Error getting site source' unless $?.to_i == 0
+      cmd = 'git clone #{source[:url]} #{tmp_dir}'
+      error 500, 'Error getting site source' unless sh(cmd)
     end
 
     logger.info 'Building website'
-    logger.debug cmd = [
+    cmd = [
       "cd #{tmp_dir}",
       "export LC_CTYPE=en_US.UTF-8",
       "export LANG=en_US.UTF-8",
       "export BUNDLE_GEMFILE=#{tmp_dir}/Gemfile",
       "#{source[:build]}"
     ].join(' && ')
-    error 500, 'Error building website' unless system cmd
+    error 500, 'Error building website' unless sh(cmd)
 
     logger.info 'Deploying website'
     cmd = "cd #{tmp_dir} && #{source[:deploy]}"
-    logger.debug cmd
-    error 500, 'Error deploying website' unless system cmd
+    error 500, 'Error deploying website' unless sh(cmd)
 
     seconds = (Time.now - start_time).round(2)
     logger.info "Finished in #{seconds} seconds."
@@ -131,16 +134,16 @@ class TurnAndPushApp < Sinatra::Base
   def tail(num=TAIL_LENGTH)
     error 500, 'Log file not exists' unless File.exists? LOG_FILE
     logger.info "Reading #{num} lines from log tail"
-    `tail -n #{num} #{LOG_FILE}`
-  end
-
-  def bundle(command)
-    bundle_command = "bundle #{command}"
-    error 500, "Error doing #{bundle_command}" unless system bundle_command
+    sh("tail -n #{num} #{LOG_FILE}")
   end
 
   def error(code, message)
     logger.fatal(message)
     halt code, message
+  end
+
+  def sh(command)
+    logger.info "Executing shell command: #{command}"
+    system command
   end
 end
