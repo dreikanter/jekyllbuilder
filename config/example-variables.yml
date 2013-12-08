@@ -1,3 +1,8 @@
+# Environment variables definition
+
+# This is an example file. Actual configuration should be
+# located at config/variables.yml.
+
 # This file may define environment variables to be exported before
 # build command execution. It could be helpful to transfer some data
 # to Jekyll, or control build process.

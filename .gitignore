@@ -5,6 +5,7 @@
 .bundle
 .config
 config/sources.yml
+config/variables.yml
 coverage
 InstalledFiles
 lib/bundler/man
