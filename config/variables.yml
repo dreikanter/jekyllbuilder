@@ -1,0 +1,19 @@
+# This file may define environment variables to be exported before
+# build command execution. It could be helpful to transfer some data
+# to Jekyll, or control build process.
+#
+# Variables file suppose to define a plain list of key-value pairs.
+# All values will be represented as plain strings during the export,
+# e.g. this
+#
+#   list:
+#     - 1
+#     - 2
+#     - 3
+#
+# will produce the following:
+#
+#   export list=[1,2,3]
+#
+
+example_key: example_value

@@ -9,6 +9,12 @@ require 'yaml'
 # Path to the git sources definition file
 SOURCE_FILE = File.join settings.root, 'config/sources.yml'
 
+# Path to environment variables difinition file to export before build
+VAR_FILE = File.join settings.root, 'config/variables.yml'
+
+# Environment variable prefix to distinguish variables.yml variables
+VAR_PREFIX = 'JEKYLL_'
+
 # Temporaru dir for website building
 TMP_DIR = File.join settings.root, 'tmp'
 
@@ -117,8 +123,25 @@ class TurnAndPushApp < Sinatra::Base
       "export LC_CTYPE=en_US.UTF-8",
       "export LANG=en_US.UTF-8",
       "export BUNDLE_GEMFILE=#{tmp_dir}/Gemfile",
-      "#{source[:build]}"
-    ].join(' && ')
+    ]
+
+    if File.exists? VAR_FILE
+      begin
+        vars = YAML.load_file VAR_FILE
+        if vars.is_a? Hash
+          vars.keys.each do |name|
+            cmd << "export #{VAR_PREFIX}#{name}=#{vars[name]}"
+          end
+          logger.info "#{vars.keys.length} variables loaded from #{VAR_FILE}"
+        end
+      rescue => e
+        logger.warn "Error loading variables from #{VAR_FILE}: #{e.message}"
+        logger.debug e.backtrace.join("\n")
+      end
+    end
+
+    cmd << "#{source[:build]}"
+    cmd = cmd.join(' && ')
     error 500, 'Error building website' unless sh(cmd)
 
     logger.info 'Deploying website'
