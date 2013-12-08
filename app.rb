@@ -113,7 +113,7 @@ class TurnAndPushApp < Sinatra::Base
 
     unless File.directory? tmp_dir
       logger.info "Cloning #{source[:url]} to #{tmp_dir}"
-      cmd = 'git clone #{source[:url]} #{tmp_dir}'
+      cmd = "git clone #{source[:url]} #{tmp_dir}"
       error 500, 'Error getting site source' unless sh(cmd)
     end
 
