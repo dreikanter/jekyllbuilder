@@ -98,4 +98,4 @@ Log tail request:
 
 You don't want to know ಠ_ಠ
 
-![Turn and Push GIF](http://d.pr/i/ykzw+)
+![Turn and Push GIF](https://raw.github.com/dreikanter/turnandpush/cd5791005d3d1c92d452d3549f2d4143ae6786a2/public/turn-and-push.gif)
