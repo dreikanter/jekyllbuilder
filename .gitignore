@@ -4,6 +4,7 @@
 *.rbc
 .bundle
 .config
+config/nginx.conf
 config/sources.yml
 config/variables.yml
 coverage
