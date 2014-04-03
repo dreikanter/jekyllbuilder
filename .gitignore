@@ -7,6 +7,7 @@
 config/nginx.conf
 config/sources.yml
 config/variables.yml
+config/wikis.yml
 coverage
 InstalledFiles
 lib/bundler/man

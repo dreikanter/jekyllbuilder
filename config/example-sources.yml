@@ -3,18 +3,12 @@
 # This is an example file. Actual sources definition should be
 # located at config/sources.yml. See readme for format details.
 
-sites:
-  jekyll:  # Jekyll example with HTTPS source URL and rsync deployment
-    url: https://github.com/dreikanter/jekyll-test.git
-    build: bundle install && bundle exec jekyll build
-    deploy: rsync -avz --delete _site/ admin@example.com:/var/www/example.com/current
+jekyll-example:  # Jekyll example with HTTPS source URL and rsync deployment
+  url: https://github.com/dreikanter/jekyll-test.git
+  build: bundle install && bundle exec jekyll build
+  deploy: rsync -avz --delete _site/ admin@example.com:/var/www/example.com/current
 
-  octopress:  # Octopress example with SSH source URL
-    url: git@github.com:dreikanter/octopress-test.git
-    build: bundle install && bundle exec rake generate
-    deploy: rsync -avz --delete public/ admin@example.org:/var/www/example.org/current
-
-versions:
-- https://github.com/dreikanter/public-static.git
-- https://github.com/dreikanter/pyke.git
-- https://github.com/dreikanter/wp2md.git
+octopress-example:  # Octopress example with SSH source URL
+  url: git@github.com:dreikanter/octopress-test.git
+  build: bundle install && bundle exec rake generate
+  deploy: rsync -avz --delete public/ admin@example.org:/var/www/example.org/current
