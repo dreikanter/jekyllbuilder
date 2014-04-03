@@ -1,6 +1,7 @@
 source 'http://rubygems.org/'
 
 gem 'addressable'
+gem 'gollum-lib'
 gem 'jekyll', :git => 'https://github.com/mojombo/jekyll.git'
 gem 'sinatra'
 
