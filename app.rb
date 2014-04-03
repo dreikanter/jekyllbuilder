@@ -12,7 +12,10 @@ SOURCE_FILE = File.join settings.root, 'config/sources.yml'
 # Path to variables difinition to export for Jekyll
 VAR_FILE = File.join settings.root, 'config/variables.yml'
 
-# Temporaru dir for website building
+# Path to the GitHub wiki sources definition file
+WIKIS_FILE = File.join settings.root, 'config/wikis.yml'
+
+# Temporary dir for website building
 TMP_DIR = File.join settings.root, 'tmp'
 
 # Application log file
@@ -42,13 +45,16 @@ class TurnAndPushApp < Sinatra::Base
     build(owner, repo)
   end
 
-  get '/build/:owner/:repo' do
-    owner = params[:owner]
-    repo = params[:repo]
-    error 401, 'Bad owner' unless owner
-    error 401, 'Bad repository' unless repo
-    logger.info "Build request: #{owner}/#{repo}"
-    build(owner, repo)
+  get '/build/:name' do
+    name = params[:name]
+    error 401, 'Source name undefined' unless name
+    build(name)
+  end
+
+  get '/publish/:name' do
+    name = params[:name]
+    error 401, 'Source name undefined' unless name
+    publish(wiki_source_by_name(name))
   end
 
   get '/log' do
@@ -64,35 +70,41 @@ class TurnAndPushApp < Sinatra::Base
     error 405, 'Go away!'
   end
 
-  def load_sources()
-    sources = []
-    YAML.load_file(SOURCE_FILE).each do |s|
-      path = Addressable::URI.parse(s['url']).path
-      owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
-      sources << {
-        :url => s['url'],
-        :owner => owner,
-        :repo => repo,
-        :build => s['build'],
-        :deploy => s['deploy'],
-      }
+  def sources()
+    result = {}
+    begin
+      YAML.load_file(SOURCE_FILE).each do |name, source|
+        path = Addressable::URI.parse(source['url']).path
+        owner, repo = path.gsub(/(^\/+)|(\.git$)/, '').split('/', 2)
+        result[name] = {
+          :url => source['url'],
+          :owner => owner,
+          :repo => repo,
+          :build => source['build'],
+          :deploy => source['deploy'],
+        }
+      end
+    rescue => e
+      logger.error "Error loading sources from #{SOURCE_FILE}"
+      error 500, 'Configuration error'
     end
-    return sources
+    return result
   end
 
-  def build(owner, repo)
-    start_time = start = Time.now
-
+  def wikis()
     begin
-      @sources = load_sources
+      return YAML.load_file(WIKIS_FILE)
     rescue => e
-      error 500, "Error loading sources from #{SOURCE_FILE}"
+      logger "Error loading sources from #{WIKIS_FILE}"
+      error 500, 'Configuration error'
     end
+  end
 
-    source = @sources.find {|s| s[:owner] == owner and s[:repo] == repo}
-    error 401, 'Unallowed source' unless source
-
-    tmp_dir = File.join TMP_DIR, "#{owner}--#{repo}"
+  def build(source_name)
+    start_time = start = Time.now
+    source = sources[source_name]
+    error 401, 'Undefined source' unless source
+    tmp_dir = File.join TMP_DIR, "#{source_name}"
 
     if File.directory? tmp_dir
       logger.info 'Updating local repository'
@@ -134,6 +146,10 @@ class TurnAndPushApp < Sinatra::Base
     logger.info "Finished in #{seconds} seconds."
 
     halt 200, 'Ok'
+  end
+
+  def publish(name)
+    logger.debug "Publishing a wiki"
   end
 
   def tail(num=TAIL_LENGTH)
