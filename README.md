@@ -38,6 +38,8 @@ Configure password-less SSH access for each deployment destination.
 
 Add `http://{your-domain}/handle` to Settings/Service Hooks/WebHook URLs list for each GitHub repo with Jekyll sources, you need to process.
 
+If you want to publish GitHub wiki pages, you should also enable wiki events for this webhook.
+
 Check deployment configuration inside rakefiles for each Jekyll project. It should work properly on build server environment. Example is below.
 
 	ssh_user       = "admin@example.com"
@@ -84,15 +86,21 @@ Handling URL:
 
 Manual build request:
 
-	GET http://{domain}/build/{owner}/{repository}
+	GET http://{domain}/build/{name}
 
-`{owner}/{repository}` should be the same as in GitHub URL. For example to build `http://github.com/dreikanter/jekyll-test.git`, you should seng GET request to `http://turnandpush.domain.com/dreikanter/jekyll-test`.
+`{name}` should be a GitHub source repository name defined in `sources.yml`. For example to build `http://github.com/dreikanter/jekyll-test.git` from `example-sources.yml`, you should seng GET request to `http://turnandpush.domain.com/build/jekyll-example`.
 
 Log tail request:
 
 	GET http://{domain}/log/{lines-number}
 
 `{lines-number}` is an optional parameter to specify amount of lines to get from the end of log file. By default `/log` will return 10 lines.
+
+Manual publish request for GitHub project wiki:
+
+	GET http://{domain}/publish/{name}
+
+`{name}` should be a GitHum wiki source name defined in `wikis.yml`. See `example-wikis.yml` for configuration samples.
 
 ## Why Turn and Push?
 
