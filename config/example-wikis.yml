@@ -2,5 +2,6 @@
 # to a directory containing HTML files built from wiki source.
 
 wiki-example:
-  url: https://github.com/dreikanter/jekyll-test.git
+  url: https://github.com/dreikanter/jekyll-test.wiki.git
+  base_path: /
   deploy: rsync -avz --delete %s admin@example.com:/var/www/example.com/current/wiki

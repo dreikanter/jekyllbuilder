@@ -44,10 +44,19 @@ class TurnAndPushApp < Sinatra::Base
 
   post '/handle' do
     data = JSON.parse params[:payload]
-    owner = data['repository']['owner']['name']
-    repo = data['repository']['name']
-    logger.info "Handling webhook: #{owner}/#{repo}"
-    build(owner, repo)
+    if data.has_key? 'commits'  # It's push event
+      owner = data['repository']['owner']['name']
+      repo = data['repository']['name']
+      logger.info "Handling push webhook: #{owner}/#{repo}"
+      build(get_name(sources, owner, repo))
+    elsif data.has_key? 'pages'  # It's wiki update event
+      owner = data['repository']['owner']['login']
+      repo = data['repository']['name']
+      logger.info "Handling wiki update webhook: #{owner}/#{repo}"
+      publish(get_name(wikis, owner, repo))
+    else
+      error 401, 'Unsupported input data format'
+    end
   end
 
   get '/build/:name' do
@@ -97,12 +106,33 @@ class TurnAndPushApp < Sinatra::Base
   end
 
   def wikis()
+    result = {}
     begin
-      return YAML.load_file(WIKIS_FILE)
+      YAML.load_file(WIKIS_FILE).each do |name, source|
+        path = Addressable::URI.parse(source['url']).path
+        owner, repo = path.gsub(/(^\/+)|(\.wiki\.git$)/, '').split('/', 2)
+        result[name] = {
+          :url => source['url'],
+          :owner => owner,
+          :repo => repo,
+          :base_path => source['base_path'],
+          :deploy => source['deploy'],
+        }
+      end
     rescue => e
       logger "Error loading sources from #{WIKIS_FILE}"
       error 500, 'Configuration error'
     end
+    return result
+  end
+
+  def get_name(sources, owner, repo)
+    sources.each do |name, source|
+      if source[:owner] == owner and source[:repo] == repo
+        return name
+      end
+    end
+    error 500, "Undefined source: #{owner}/#{repo}"
   end
 
   def build(source_name)
@@ -176,8 +206,8 @@ class TurnAndPushApp < Sinatra::Base
     end
 
     unless File.directory? tmp_dir
-      logger.info "Cloning #{source['url']} to #{tmp_dir}"
-      cmd = "git clone #{source['url']} #{tmp_dir}"
+      logger.info "Cloning #{source[:url]} to #{tmp_dir}"
+      cmd = "git clone #{source[:url]} #{tmp_dir}"
       logger.info 'Error getting site source' unless sh(cmd)
     end
 
@@ -185,7 +215,7 @@ class TurnAndPushApp < Sinatra::Base
     output_dir = "#{tmp_dir}.wiki.output"
     FileUtils.rm_rf output_dir if File.directory? output_dir
     FileUtils.mkdir_p output_dir
-    wiki = Gollum::Wiki.new(tmp_dir, :base_path => source['base_path'])
+    wiki = Gollum::Wiki.new(tmp_dir, :base_path => source[:base_path])
     tpl = File.open(TEMPLATE_FILE, 'r:UTF-8') { |f| f.read }
 
     wiki.pages.each do |page|
@@ -197,10 +227,10 @@ class TurnAndPushApp < Sinatra::Base
     end
 
     logger.info 'Pushing the tempo!'
-    output_dir << '/' unless output_dir.end_with?('/')
-    sh source['deploy'] % output_dir
+    output_dir << '/' unless output_dir.end_with? '/'
+    cmd = source[:deploy] % output_dir
+    error 500, 'Error deploying wiki pages' unless sh cmd
 
-    logger.info 'Clean up'
     logger.info 'Cleaning up temporary files'
     FileUtils.rm_rf tmp_dir if File.directory? tmp_dir
     FileUtils.rm_rf output_dir if File.directory? output_dir
