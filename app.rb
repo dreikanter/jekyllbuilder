@@ -24,6 +24,11 @@ LOG_FILE = File.join settings.root, "log/#{settings.environment}.log"
 # Default tail length
 TAIL_LENGTH = 30
 
+# Presence of this marker tells that the wiki page should be exported
+EXPORT_MARKER = '<export>'
+
+TEMPLATE_FILE = File.join settings.root, 'config/template.html'
+
 class TurnAndPushApp < Sinatra::Base
   configure do
     enable :logging
@@ -54,7 +59,7 @@ class TurnAndPushApp < Sinatra::Base
   get '/publish/:name' do
     name = params[:name]
     error 401, 'Source name undefined' unless name
-    publish(wiki_source_by_name(name))
+    publish(name)
   end
 
   get '/log' do
@@ -148,8 +153,62 @@ class TurnAndPushApp < Sinatra::Base
     halt 200, 'Ok'
   end
 
-  def publish(name)
-    logger.debug "Publishing a wiki"
+  def publish(source_name)
+    start_time = start = Time.now
+    source = wikis[source_name]
+    logger.info source
+    error 401, 'Undefined source' unless source
+    tmp_dir = File.join TMP_DIR, "#{source_name}.wiki"
+
+    logger.info 'Fetching wiki data'
+    if File.directory? tmp_dir
+      logger.info 'Updating local repository'
+      cmd = [
+        "cd #{tmp_dir}",
+        "git fetch --all",
+        "git reset --hard origin/master"
+        ].join(' && ')
+      unless sh(cmd)
+        logger.error 'Error merging remote changes'
+        logger.info 'Purging local copy'
+        FileUtils.rm_rf tmp_dir
+      end
+    end
+
+    unless File.directory? tmp_dir
+      logger.info "Cloning #{source['url']} to #{tmp_dir}"
+      cmd = "git clone #{source['url']} #{tmp_dir}"
+      logger.info 'Error getting site source' unless sh(cmd)
+    end
+
+    logger.info 'Building wiki pages'
+    output_dir = "#{tmp_dir}.wiki.output"
+    FileUtils.rm_rf output_dir if File.directory? output_dir
+    FileUtils.mkdir_p output_dir
+    wiki = Gollum::Wiki.new(tmp_dir, :base_path => source['base_path'])
+    tpl = File.open(TEMPLATE_FILE, 'r:UTF-8') { |f| f.read }
+
+    wiki.pages.each do |page|
+      next unless page.raw_data.include? EXPORT_MARKER
+      output_file = File.join output_dir, File.basename(page.filename, '.*')
+      File.open(output_file, 'w:UTF-8') do |f|
+        f.write(tpl % { :title => page.title, :content => page.formatted_data })
+      end
+    end
+
+    logger.info 'Pushing the tempo!'
+    output_dir << '/' unless output_dir.end_with?('/')
+    sh source['deploy'] % output_dir
+
+    logger.info 'Clean up'
+    logger.info 'Cleaning up temporary files'
+    FileUtils.rm_rf tmp_dir if File.directory? tmp_dir
+    FileUtils.rm_rf output_dir if File.directory? output_dir
+
+    seconds = (Time.now - start_time).round(2)
+    logger.info "Finished in #{seconds} seconds."
+
+    halt 200, 'Ok'
   end
 
   def tail(num=TAIL_LENGTH)

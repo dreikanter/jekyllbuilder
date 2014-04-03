@@ -1,3 +1,6 @@
+# %s in deploy value will be replaced with actual path
+# to a directory containing HTML files built from wiki source.
+
 wiki-example:
   url: https://github.com/dreikanter/jekyll-test.git
-  deploy: rsync -avz --delete _site/ admin@example.com:/var/www/example.com/current/wiki
+  deploy: rsync -avz --delete %s admin@example.com:/var/www/example.com/current/wiki
